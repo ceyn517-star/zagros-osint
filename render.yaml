@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: zagros-osint
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    plan: free
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: SITE_PASSWORD
+        value: '12331'
+      - key: FINDCORD_API_KEY
+        value: '1fb785c3eb8069ba341836e0b25dabb4b20e439b4bce300123da1f791f12a3ea'
+      - key: DATA_DIR
+        value: /opt/render/project/src
