@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Zagros OSINT</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <style>
+    body { background: #0f1117; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; }
+    .card { background: #1a1d27; border: 1px solid #2d3148; border-radius: 12px; }
+    .input-field { background: #0f1117; border: 1px solid #2d3148; color: #e2e8f0; border-radius: 8px; padding: 10px 14px; width: 100%; outline: none; transition: border-color .2s; }
+    .input-field:focus { border-color: #6366f1; }
+    .btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; border-radius: 8px; padding: 10px 24px; cursor: pointer; font-weight: 600; transition: opacity .2s; }
+    .btn-primary:hover { opacity: .85; }
+    .btn-secondary { background: #2d3148; color: #e2e8f0; border: none; border-radius: 8px; padding: 8px 18px; cursor: pointer; transition: background .2s; }
+    .btn-secondary:hover { background: #3d4168; }
+    .tab-btn { padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: .875rem; font-weight: 500; border: none; background: transparent; color: #94a3b8; transition: all .2s; }
+    .tab-btn.active { background: #6366f1; color: #fff; }
+    .tab-btn:hover:not(.active) { background: #2d3148; color: #e2e8f0; }
+    .result-box { background: #0f1117; border: 1px solid #2d3148; border-radius: 8px; padding: 16px; margin-top: 12px; font-size: .85rem; white-space: pre-wrap; word-break: break-all; max-height: 480px; overflow-y: auto; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+    .badge-red { background: #7f1d1d; color: #fca5a5; }
+    .badge-green { background: #14532d; color: #86efac; }
+    .badge-yellow { background: #713f12; color: #fde68a; }
+    .badge-blue { background: #1e3a5f; color: #93c5fd; }
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid #6366f1; border-top-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #login-screen { display: flex; }
+    #main-app { display: none; }
+  </style>
+</head>
+<body>
+
+<div id="login-screen" class="min-h-screen items-center justify-center">
+  <div class="card p-10 w-full max-w-sm mx-auto text-center">
+    <div class="text-5xl mb-4">🔍</div>
+    <h1 class="text-2xl font-bold mb-1 text-indigo-400">Zagros OSINT</h1>
+    <p class="text-slate-400 text-sm mb-8">Gelişmiş açık kaynak istihbarat aracı</p>
+    <input id="pw-input" type="password" placeholder="Şifre" class="input-field mb-4" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="btn-primary w-full" onclick="doLogin()">Giriş Yap</button>
+    <p id="login-err" class="text-red-400 text-sm mt-3 hidden">Hatalı şifre.</p>
+  </div>
+</div>
+
+<div id="main-app" class="min-h-screen">
+  <header class="border-b border-slate-800 px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🔍</span>
+      <span class="text-xl font-bold text-indigo-400">Zagros OSINT</span>
+    </div>
+    <button class="btn-secondary text-sm" onclick="doLogout()">Çıkış</button>
+  </header>
+
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="flex flex-wrap gap-2 mb-8">
+      <button class="tab-btn active" onclick="switchTab('discord',this)">Discord</button>
+      <button class="tab-btn" onclick="switchTab('email',this)">E-posta</button>
+      <button class="tab-btn" onclick="switchTab('ip',this)">IP Adresi</button>
+      <button class="tab-btn" onclick="switchTab('username',this)">Kullanıcı Adı</button>
+      <button class="tab-btn" onclick="switchTab('phone',this)">Telefon</button>
+      <button class="tab-btn" onclick="switchTab('domain',this)">Domain</button>
+    </div>
+
+    <div id="tab-discord" class="tab-content card p-6">
+      <h2 class="text-lg font-semibold mb-4 text-indigo-300">Discord ID Sorgula</h2>
+      <div class="flex gap-3">
+        <input id="discord-input" type="text" placeholder="Discord ID" class="input-field" onkeydown="if(event.key==='Enter')searchDiscord()"/>
+        <button class="btn-primary whitespace-nowrap" onclick="searchDiscord()">Sorgula</button>
+      </div>
+      <div id="discord-result"></div>
+    </div>
+
+    <div id="tab-email" class="tab-content card p-6 hidden">
+      <h2 class="text-lg font-semibold mb-4 text-indigo-300">E-posta OSINT</h2>
+      <div class="flex gap-3">
+        <input id="email-input" type="email" placeholder="ornek@email.com" class="input-field" onkeydown="if(event.key==='Enter')searchEmail()"/>
+        <button class="btn-primary whitespace-nowrap" onclick="searchEmail()">Sorgula</button>
+      </div>
+      <div id="email-result"></div>
+    </div>
+
+    <div id="tab-ip" class="tab-content card p-6 hidden">
+      <h2 class="text-lg font-semibold mb-4 text-indigo-300">IP Adresi Sorgula</h2>
+      <div class="flex gap-3">
+        <input id="ip-input" type="text" placeholder="1.2.3.4" class="input-field" onkeydown="if(event.key==='Enter')searchIP()"/>
+        <button class="btn-primary whitespace-nowrap" onclick="searchIP()">Sorgula</button>
+      </div>
+      <div id="ip-result"></div>
+    </div>
+
+    <div id="tab-username" class="tab-content card p-6 hidden">
+      <h2 class="text-lg font-semibold mb-4 text-indigo-300">Kullanıcı Adı Sorgula</h2>
+      <div class="flex gap-3">
+        <input id="username-input" type="text" placeholder="kullanici_adi" class="input-field" onkeydown="if(event.key==='Enter')searchUsername()"/>
+        <button class="btn-primary whitespace-nowrap" onclick="searchUsername()">Sorgula</button>
+      </div>
+      <div id="username-result"></div>
+    </div>
+
+    <div id="tab-phone" class="tab-content card p-6 hidden">
+      <h2 class="text-lg font-semibold mb-4 text-indigo-300">Telefon Sorgula</h2>
+      <div class="flex gap-3">
+        <input id="phone-input" type="text" placeholder="+905551234567" class="input-field" onkeydown="if(event.key==='Enter')searchPhone()"/>
+        <button class="btn-primary whitespace-nowrap" onclick="searchPhone()">Sorgula</button>
+      </div>
+      <div id="phone-result"></div>
+    </div>
+
+    <div id="tab-domain" class="tab-content card p-6 hidden">
+      <h2 class="text-lg font-semibold mb-4 text-indigo-300">Domain Sorgula</h2>
+      <div class="flex gap-3">
+        <input id="domain-input" type="text" placeholder="example.com" class="input-field" onkeydown="if(event.key==='Enter')searchDomain()"/>
+        <button class="btn-primary whitespace-nowrap" onclick="searchDomain()">Sorgula</button>
+      </div>
+      <div id="domain-result"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function doLogin() {
+  const pw = document.getElementById('pw-input').value;
+  const err = document.getElementById('login-err');
+  err.classList.add('hidden');
+  try {
+    const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pw }), credentials:'include' });
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('main-app').style.display = 'block';
+    } else {
+      err.classList.remove('hidden');
+    }
+  } catch(e) { err.classList.remove('hidden'); }
+}
+
+async function doLogout() {
+  await fetch('/api/logout', { method:'POST', credentials:'include' });
+  location.reload();
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.remove('hidden');
+  btn.classList.add('active');
+}
+
+function loading(id) {
+  document.getElementById(id).innerHTML = '<div class="mt-4 text-slate-400"><span class="spinner"></span> Sorgulanıyor...</div>';
+}
+
+function showResult(id, html) {
+  document.getElementById(id).innerHTML = '<div class="result-box">' + html + '</div>';
+}
+
+function showError(id, msg) {
+  document.getElementById(id).innerHTML = '<div class="mt-3 text-red-400 text-sm">⚠️ ' + msg + '</div>';
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function badge(text, color) { return '<span class="badge badge-' + color + '">' + esc(text) + '</span>'; }
+
+async function searchDiscord() {
+  const id = document.getElementById('discord-input').value.trim();
+  if (!id) return;
+  loading('discord-result');
+  try {
+    const r = await fetch('/api/search?discord_id=' + encodeURIComponent(id), { credentials:'include' });
+    const d = await r.json();
+    if (!r.ok) { showError('discord-result', d.error || 'Hata'); return; }
+    let html = '<b class="text-indigo-300">Discord Sorgu Sonucu</b>\n\n';
+    if (d.discord) {
+      const u = d.discord;
+      html += '👤 <b>' + esc(u.username || u.global_name || 'Bilinmiyor') + '</b>\n';
+      html += '🆔 ID: ' + esc(u.id || id) + '\n';
+      if (u.email) html += '📧 Email: ' + esc(u.email) + '\n';
+      if (u.phone) html += '📱 Telefon: ' + esc(u.phone) + '\n';
+      if (u.ip) html += '🌐 IP: ' + esc(u.ip) + '\n';
+      if (u.locale) html += '🌍 Dil: ' + esc(u.locale) + '\n';
+      if (u.premium_type) html += '💎 Nitro: ' + esc(u.premium_type) + '\n';
+    }
+    if (d.db_results && d.db_results.length > 0) {
+      html += '\n📂 <b>Veritabanı Kayıtları (' + d.db_results.length + '):</b>\n';
+      d.db_results.forEach(r => {
+        if (r.email_masked) html += '  📧 ' + esc(r.email_masked) + '\n';
+        if (r.ip_masked) html += '  🌐 ' + esc(r.ip_masked) + '\n';
+        if (r.username) html += '  👤 ' + esc(r.username) + '\n';
+      });
+    }
+    if (!d.discord && (!d.db_results || d.db_results.length === 0)) {
+      html += '❌ Sonuç bulunamadı.';
+    }
+    showResult('discord-result', html);
+  } catch(e) { showError('discord-result', e.message); }
+}
+
+async function searchEmail() {
+  const email = document.getElementById('email-input').value.trim();
+  if (!email) return;
+  loading('email-result');
+  try {
+    const r = await fetch('/api/email-osint?email=' + encodeURIComponent(email), { credentials:'include' });
+    const d = await r.json();
+    if (!r.ok) { showError('email-result', d.error || 'Hata'); return; }
+    let html = '📧 <b>' + esc(d.email) + '</b>\n\n';
+    const s = d.summary;
+    if (s) {
+      html += '⚠️ Risk: ' + badge(s.risk_level || 'unknown', s.risk_level === 'high' ? 'red' : s.risk_level === 'medium' ? 'yellow' : 'green') + '\n';
+      html += '🔓 İhlal Sayısı: <b>' + (s.total_breaches || 0) + '</b>\n';
+      if (s.data_types_exposed && s.data_types_exposed.length > 0) {
+        html += '📋 Sızdırılan Veriler: ' + s.data_types_exposed.map(t => esc(t)).join(', ') + '\n';
+      }
+    }
+    if (d.reputation) {
+      const rep = d.reputation;
+      html += '\n🛡️ <b>Reputation:</b>\n';
+      html += '  Puan: ' + esc(rep.reputation || 'unknown') + '\n';
+      if (rep.suspicious) html += '  ' + badge('Şüpheli', 'red') + '\n';
+      if (rep.disposable) html += '  ' + badge('Geçici Email', 'yellow') + '\n';
+      if (rep.free_provider) html += '  ' + badge('Ücretsiz Sağlayıcı', 'blue') + '\n';
+    }
+    if (d.breaches && d.breaches.length > 0) {
+      html += '\n🔓 <b>İhlaller:</b>\n';
+      d.breaches.slice(0, 10).forEach(b => {
+        html += '  • ' + esc(b.site) + ' (' + esc(b.breach_date || '?') + ')\n';
+        if (b.data_classes && b.data_classes.length) html += '    ' + b.data_classes.map(c => esc(c)).join(', ') + '\n';
+      });
+    }
+    showResult('email-result', html);
+  } catch(e) { showError('email-result', e.message); }
+}
+
+async function searchIP() {
+  const ip = document.getElementById('ip-input').value.trim();
+  if (!ip) return;
+  loading('ip-result');
+  try {
+    const r = await fetch('/api/search-ip?ip=' + encodeURIComponent(ip), { credentials:'include' });
+    const d = await r.json();
+    if (!r.ok) { showError('ip-result', d.error || 'Hata'); return; }
+    let html = '🌐 <b>IP: ' + esc(ip) + '</b>\n\n';
+    if (d.geo) {
+      const g = d.geo;
+      if (g.country) html += '🌍 Ülke: ' + esc(g.country) + '\n';
+      if (g.city) html += '🏙️ Şehir: ' + esc(g.city) + '\n';
+      if (g.region) html += '📍 Bölge: ' + esc(g.region) + '\n';
+      if (g.ll) html += '📌 Koordinat: ' + g.ll.join(', ') + '\n';
+      if (g.timezone) html += '🕐 Zaman Dilimi: ' + esc(g.timezone) + '\n';
+    }
+    if (d.db_results && d.db_results.length > 0) {
+      html += '\n📂 <b>Veritabanı Eşleşmeleri (' + d.db_results.length + '):</b>\n';
+      d.db_results.slice(0, 10).forEach(r => {
+        if (r.username) html += '  👤 ' + esc(r.username) + '\n';
+        if (r.email_masked) html += '  📧 ' + esc(r.email_masked) + '\n';
+      });
+    }
+    if (!d.geo && (!d.db_results || d.db_results.length === 0)) html += '❌ Sonuç bulunamadı.';
+    showResult('ip-result', html);
+  } catch(e) { showError('ip-result', e.message); }
+}
+
+async function searchUsername() {
+  const u = document.getElementById('username-input').value.trim();
+  if (!u) return;
+  loading('username-result');
+  try {
+    const r = await fetch('/api/lookup-username?username=' + encodeURIComponent(u), { credentials:'include' });
+    const d = await r.json();
+    if (!r.ok) { showError('username-result', d.error || 'Hata'); return; }
+    let html = '👤 <b>Kullanıcı: ' + esc(u) + '</b>\n\n';
+    if (d.platforms && d.platforms.length > 0) {
+      html += '🌐 <b>Bulunan Platformlar:</b>\n';
+      d.platforms.forEach(p => {
+        const icon = p.found ? '✅' : '❌';
+        html += icon + ' ' + esc(p.platform) + (p.url ? ' — ' + esc(p.url) : '') + '\n';
+      });
+    }
+    if (d.db_results && d.db_results.length > 0) {
+      html += '\n📂 <b>Veritabanı Eşleşmeleri (' + d.db_results.length + '):</b>\n';
+      d.db_results.slice(0, 10).forEach(r => {
+        if (r.email_masked) html += '  📧 ' + esc(r.email_masked) + '\n';
+        if (r.ip_masked) html += '  🌐 ' + esc(r.ip_masked) + '\n';
+      });
+    }
+    if ((!d.platforms || d.platforms.length === 0) && (!d.db_results || d.db_results.length === 0)) html += '❌ Sonuç bulunamadı.';
+    showResult('username-result', html);
+  } catch(e) { showError('username-result', e.message); }
+}
+
+async function searchPhone() {
+  const phone = document.getElementById('phone-input').value.trim();
+  if (!phone) return;
+  loading('phone-result');
+  try {
+    const r = await fetch('/api/lookup-phone?phone=' + encodeURIComponent(phone), { credentials:'include' });
+    const d = await r.json();
+    if (!r.ok) { showError('phone-result', d.error || 'Hata'); return; }
+    let html = '📱 <b>Telefon: ' + esc(phone) + '</b>\n\n';
+    if (d.country) html += '🌍 Ülke: ' + esc(d.country) + '\n';
+    if (d.carrier) html += '📡 Operatör: ' + esc(d.carrier) + '\n';
+    if (d.line_type) html += '📞 Hat Tipi: ' + esc(d.line_type) + '\n';
+    if (d.valid !== undefined) html += d.valid ? badge('Geçerli', 'green') : badge('Geçersiz', 'red');
+    if (!d.country && !d.carrier) html += '❌ Sonuç bulunamadı.';
+    showResult('phone-result', html);
+  } catch(e) { showError('phone-result', e.message); }
+}
+
+async function searchDomain() {
+  const domain = document.getElementById('domain-input').value.trim();
+  if (!domain) return;
+  loading('domain-result');
+  try {
+    const r = await fetch('/api/lookup-domain?domain=' + encodeURIComponent(domain), { credentials:'include' });
+    const d = await r.json();
+    if (!r.ok) { showError('domain-result', d.error || 'Hata'); return; }
+    let html = '🌐 <b>Domain: ' + esc(domain) + '</b>\n\n';
+    if (d.whois) {
+      const w = d.whois;
+      if (w.registrar) html += '🏢 Kayıt Şirketi: ' + esc(w.registrar) + '\n';
+      if (w.creation_date) html += '📅 Oluşturulma: ' + esc(w.creation_date) + '\n';
+      if (w.expiration_date) html += '⏰ Bitiş: ' + esc(w.expiration_date) + '\n';
+      if (w.name_servers) html += '🖥️ NS: ' + (Array.isArray(w.name_servers) ? w.name_servers.join(', ') : esc(w.name_servers)) + '\n';
+    }
+    if (d.dns) {
+      html += '\n🔍 <b>DNS Kayıtları:</b>\n';
+      if (d.dns.A) html += '  A: ' + d.dns.A.map(a => esc(a)).join(', ') + '\n';
+      if (d.dns.MX) html += '  MX: ' + d.dns.MX.map(m => esc(m)).join(', ') + '\n';
+    }
+    if (!d.whois && !d.dns) html += '❌ Sonuç bulunamadı.';
+    showResult('domain-result', html);
+  } catch(e) { showError('domain-result', e.message); }
+}
+</script>
+</body>
+</html>
