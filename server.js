@@ -7,6 +7,16 @@ import express from 'express';
 import session from 'express-session';
 import geoip from 'geoip-lite';
 import axios from 'axios';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import nodemailer from 'nodemailer';
+
+// Load .env if present
+try {
+  const { default: dotenv } = await import('dotenv');
+  dotenv.config();
+} catch { /* dotenv optional */ }
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -705,6 +715,35 @@ async function searchPlatformsByEmail(email) {
   return platforms;
 }
 
+// HaveIBeenPwned standalone breach check
+async function checkHaveIBeenPwned(email) {
+  try {
+    const res = await axios.get(
+      `https://haveibeenpwned.com/api/v3/breachedaccount/${encodeURIComponent(email)}`,
+      {
+        headers: {
+          'User-Agent': 'Zagros-OSINT-Tool',
+          'Accept': 'application/json'
+        },
+        timeout: 8000
+      }
+    );
+    return res.data.map(b => ({
+      site: b.Name,
+      domain: b.Domain || b.Name.toLowerCase().replace(/\s+/g, ''),
+      breach_date: b.BreachDate,
+      description: b.Description,
+      data_classes: b.DataClasses || [],
+      is_sensitive: b.IsSensitive || false,
+      pwn_count: b.PwnCount || 0
+    }));
+  } catch (error) {
+    if (error.response?.status === 404) return []; // No breaches
+    console.log('[HIBP] Hata:', error.message);
+    return [];
+  }
+}
+
 // Daha fazla breach kaynağı
 async function checkLeakLookup(email) {
   // Leak-Lookup API (ücretsiz tier var ama API key gerekli)
@@ -1389,18 +1428,55 @@ async function scanSqlFileForDiscordId(sqlPath, discordId, maxHits = 50) {
   return matches;
 }
 
+// Platform URL oluşturucu (top-level)
+function getConnectionUrl(app, id, name) {
+  const appLower = (app || '').toLowerCase();
+  if (appLower.includes('spotify')) return `https://open.spotify.com/user/${id || name}`;
+  if (appLower.includes('github')) return `https://github.com/${name || id}`;
+  if (appLower.includes('twitter') || appLower.includes('x')) return `https://twitter.com/${name || id}`;
+  if (appLower.includes('instagram')) return `https://instagram.com/${name || id}`;
+  if (appLower.includes('reddit')) return `https://reddit.com/user/${name || id}`;
+  if (appLower.includes('steam')) return `https://steamcommunity.com/profiles/${id}`;
+  if (appLower.includes('twitch')) return `https://twitch.tv/${name || id}`;
+  if (appLower.includes('youtube')) return `https://youtube.com/channel/${id}`;
+  if (appLower.includes('paypal')) return null;
+  if (appLower.includes('ebay')) return `https://ebay.com/usr/${name || id}`;
+  if (appLower.includes('facebook')) return `https://facebook.com/${id || name}`;
+  if (appLower.includes('tiktok')) return `https://tiktok.com/@${name || id}`;
+  if (appLower.includes('discord')) return null;
+  if (appLower.includes('battle.net') || appLower.includes('battlenet')) return null;
+  if (appLower.includes('epic')) return null;
+  if (appLower.includes('riot')) return null;
+  if (appLower.includes('crunchyroll')) return null;
+  return null;
+}
+
 const app = express();
 app.disable('x-powered-by');
 
-// CORS - tüm origin'lere izin ver (local development)
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  if (req.method === 'OPTIONS') return res.sendStatus(200);
-  next();
+// Security headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Allow inline scripts for the UI
+  crossOriginEmbedderPolicy: false
+}));
+
+// CORS
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Rate limiting
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 dakika
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'too_many_requests', message: 'Çok fazla istek. Lütfen bekleyin.' }
 });
+app.use('/api/', apiLimiter);
 
 app.use(express.json({ limit: '1mb' }));
 app.use(session({
@@ -1416,7 +1492,7 @@ app.use(session({
 }));
 
 // 🕵️ ZİYARETÇİ LOGGING - Discord Webhook
-const DISCORD_WEBHOOK_URL = 'https://discordapp.com/api/webhooks/1496280136901722222/TGXA8J1SmCeDge4FNYoiP_pj1nCn4yK-FNp9dAP1MWP96EWPusk1JD0zXi-9BSjUZPyB';
+const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1496280136901722222/TGXA8J1SmCeDge4FNYoiP_pj1nCn4yK-FNp9dAP1MWP96EWPusk1JD0zXi-9BSjUZPyB';
 
 async function logVisitor(req, action = 'visit') {
   try {
@@ -2262,30 +2338,7 @@ app.get('/api/search-email', async (req, res) => {
     }
   }
 
-  // Platform URL oluşturucu
-function getConnectionUrl(app, id, name) {
-  const appLower = app.toLowerCase();
-  if (appLower.includes('spotify')) return `https://open.spotify.com/user/${id || name}`;
-  if (appLower.includes('github')) return `https://github.com/${name || id}`;
-  if (appLower.includes('twitter') || appLower.includes('x')) return `https://twitter.com/${name || id}`;
-  if (appLower.includes('instagram')) return `https://instagram.com/${name || id}`;
-  if (appLower.includes('reddit')) return `https://reddit.com/user/${name || id}`;
-  if (appLower.includes('steam')) return `https://steamcommunity.com/profiles/${id}`;
-  if (appLower.includes('twitch')) return `https://twitch.tv/${name || id}`;
-  if (appLower.includes('youtube')) return `https://youtube.com/channel/${id}`;
-  if (appLower.includes('paypal')) return null; // PayPal profil URL'i yok
-  if (appLower.includes('ebay')) return `https://ebay.com/usr/${name || id}`;
-  if (appLower.includes('facebook')) return `https://facebook.com/${id || name}`;
-  if (appLower.includes('tiktok')) return `https://tiktok.com/@${name || id}`;
-  if (appLower.includes('discord')) return null; // Discord profil URL'i public değil
-  if (appLower.includes('battle.net') || appLower.includes('battlenet')) return null;
-  if (appLower.includes('epic')) return null;
-  if (appLower.includes('riot')) return null;
-  if (appLower.includes('crunchyroll')) return null;
-  return null;
-}
-
-// Dış OSINT kaynakları - paralel çalışsın
+  // Dış OSINT kaynakları - paralel çalışsın
   const [githubResults, hibpBreaches, gravatarInfo, platformResults, emailrepInfo] = await Promise.all([
     searchGitHubByEmail(email),
     checkHaveIBeenPwned(email),
@@ -3122,9 +3175,80 @@ app.post('/api/upload-sql', express.raw({ type: '*/*', limit: '500mb' }), async 
   }
 });
 
+// 📧 MAIL GÖNDERME ENDPOINT
+app.post('/api/send-mail', async (req, res) => {
+  try {
+    const { to, subject, body } = req.body || {};
+    if (!to || !subject || !body) {
+      return res.status(400).json({ ok: false, error: 'missing_fields', message: 'to, subject ve body zorunlu' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      return res.status(400).json({ ok: false, error: 'invalid_email', message: 'Geçersiz email adresi' });
+    }
+
+    const smtpHost = process.env.SMTP_HOST;
+    const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPass = process.env.SMTP_PASS;
+
+    if (!smtpHost || !smtpUser || !smtpPass) {
+      return res.status(503).json({ ok: false, error: 'smtp_not_configured', message: 'SMTP ayarları yapılandırılmamış. SMTP_HOST, SMTP_USER, SMTP_PASS env değişkenlerini ayarlayın.' });
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: { user: smtpUser, pass: smtpPass }
+    });
+
+    await transporter.sendMail({
+      from: `"Zagros OSINT" <${smtpUser}>`,
+      to,
+      subject,
+      text: body,
+      html: `<pre style="font-family:monospace">${body.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>`
+    });
+
+    console.log(`[Mail] Gönderildi: ${to} - ${subject}`);
+
+    // Discord'a log
+    await sendDiscordLog({
+      title: '📧 Mail Gönderildi',
+      color: 0x00b4d8,
+      fields: [
+        { name: 'Alıcı', value: to, inline: true },
+        { name: 'Konu', value: subject, inline: true }
+      ]
+    });
+
+    return res.json({ ok: true, message: 'Mail başarıyla gönderildi' });
+  } catch (err) {
+    console.error('[Mail] Hata:', err.message);
+    return res.status(500).json({ ok: false, error: 'send_failed', message: err.message });
+  }
+});
+
+// Discord'a embed log gönder (genel yardımcı)
+async function sendDiscordLog(embed) {
+  if (!DISCORD_WEBHOOK_URL) return;
+  try {
+    await axios.post(DISCORD_WEBHOOK_URL, {
+      embeds: [{ ...embed, timestamp: new Date().toISOString(), footer: { text: 'Zagros OSINT' } }]
+    }, { timeout: 5000 });
+  } catch (err) {
+    console.log('[Discord Log] Hata:', err.message);
+  }
+}
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('[Global Error]', err.message);
+  res.status(500).json({ error: 'internal_error', message: 'Sunucu hatası oluştu' });
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.listen(APP_PORT, APP_HOST, () => {
-  // Intentionally no console.log noise beyond minimal info
   console.log(`zagros running at http://${APP_HOST}:${APP_PORT}`);
 });
