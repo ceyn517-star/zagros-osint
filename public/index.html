@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zagros OSINT</title>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="loginScreen" class="login-screen app-wrapper">
+  <div class="login-card">
+    <div class="login-icon">🔍</div>
+    <h1 class="login-title">Zagros OSINT</h1>
+    <p class="login-subtitle">Gelişmiş açık kaynak istihbarat platformu</p>
+
+    <div class="input-wrapper" style="margin-bottom:12px">
+      <span class="input-icon">🔑</span>
+      <input type="password" id="loginPassword" class="has-icon" placeholder="Şifre girin..." autocomplete="current-password" />
+    </div>
+    <button class="btn btn-primary btn-full" id="loginBtn" onclick="doLogin()">
+      <span>Giriş Yap</span>
+    </button>
+    <div id="loginError" style="margin-top:12px;color:#ef4444;font-size:13px;display:none">
+      ❌ Hatalı şifre. Tekrar deneyin.
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="mainApp" class="app-wrapper" style="display:none">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-logo">
+      <div class="logo-icon">🔍</div>
+      <span class="logo-text">Zagros OSINT</span>
+    </div>
+    <div class="header-right">
+      <div class="status-badge" id="statusBadge">
+        <div class="status-dot"></div>
+        <span>Online</span>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="doLogout()">🚪 Çıkış</button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <div class="main-content">
+
+    <!-- Tabs -->
+    <div class="tabs-container">
+      <button class="tab-btn active" onclick="switchTab('discord')" id="tab-discord">
+        <span class="tab-icon">💬</span>
+        <span class="tab-label">Discord ID</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('email')" id="tab-email">
+        <span class="tab-icon">📧</span>
+        <span class="tab-label">Email OSINT</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('ip')" id="tab-ip">
+        <span class="tab-icon">🌐</span>
+        <span class="tab-label">IP Lookup</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('username')" id="tab-username">
+        <span class="tab-icon">👤</span>
+        <span class="tab-label">Username</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('phone')" id="tab-phone">
+        <span class="tab-icon">📱</span>
+        <span class="tab-label">Telefon</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('domain')" id="tab-domain">
+        <span class="tab-icon">🌍</span>
+        <span class="tab-label">Domain</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('guild')" id="tab-guild">
+        <span class="tab-icon">🏰</span>
+        <span class="tab-label">Sunucu</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('guilds')" id="tab-guilds">
+        <span class="tab-icon">📋</span>
+        <span class="tab-label">Sunucu Listesi</span>
+      </button>
+    </div>
+
+    <!-- ===== DISCORD ID TAB ===== -->
+    <div id="pane-discord" class="tab-pane">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon blue">💬</div>
+          <div>
+            <div class="card-title">Discord ID Sorgula</div>
+            <div class="card-subtitle">Discord kullanıcı ID'si ile detaylı bilgi al</div>
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-wrapper">
+            <span class="input-icon">🔢</span>
+            <input type="text" id="discordIdInput" class="has-icon" placeholder="Discord ID (örn: 123456789012345678)" />
+          </div>
+          <button class="btn btn-primary" id="discordSearchBtn" onclick="searchDiscord()">
+            <span>🔍 Sorgula</span>
+          </button>
+        </div>
+        <div id="discordResult"></div>
+      </div>
+    </div>
+
+    <!-- ===== EMAIL OSINT TAB ===== -->
+    <div id="pane-email" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon blue">📧</div>
+          <div>
+            <div class="card-title">Email OSINT</div>
+            <div class="card-subtitle">Email adresi ile breach, platform ve itibar analizi</div>
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-wrapper">
+            <span class="input-icon">📧</span>
+            <input type="email" id="emailInput" class="has-icon" placeholder="ornek@email.com" />
+          </div>
+          <button class="btn btn-primary" id="emailSearchBtn" onclick="searchEmail()">
+            <span>🔍 Araştır</span>
+          </button>
+        </div>
+        <div id="emailResult"></div>
+      </div>
+    </div>
+
+    <!-- ===== IP LOOKUP TAB ===== -->
+    <div id="pane-ip" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon cyan">🌐</div>
+          <div>
+            <div class="card-title">IP Adresi Sorgula</div>
+            <div class="card-subtitle">IP adresi ile konum ve kullanıcı bilgisi</div>
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-wrapper">
+            <span class="input-icon">🌐</span>
+            <input type="text" id="ipInput" class="has-icon" placeholder="192.168.1.1" />
+          </div>
+          <button class="btn btn-primary" id="ipSearchBtn" onclick="searchIp()">
+            <span>🔍 Sorgula</span>
+          </button>
+        </div>
+        <div id="ipResult"></div>
+      </div>
+    </div>
+
+    <!-- ===== USERNAME TAB ===== -->
+    <div id="pane-username" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon purple">👤</div>
+          <div>
+            <div class="card-title">Username Sorgula</div>
+            <div class="card-subtitle">Kullanıcı adını birden fazla platformda ara</div>
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-wrapper">
+            <span class="input-icon">👤</span>
+            <input type="text" id="usernameInput" class="has-icon" placeholder="kullanici_adi" />
+          </div>
+          <button class="btn btn-primary" id="usernameSearchBtn" onclick="searchUsername()">
+            <span>🔍 Ara</span>
+          </button>
+        </div>
+        <div id="usernameResult"></div>
+      </div>
+    </div>
+
+    <!-- ===== PHONE TAB ===== -->
+    <div id="pane-phone" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon green">📱</div>
+          <div>
+            <div class="card-title">Telefon Numarası Sorgula</div>
+            <div class="card-subtitle">Telefon numarası doğrulama ve operatör bilgisi</div>
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-wrapper">
+            <span class="input-icon">📱</span>
+            <input type="tel" id="phoneInput" class="has-icon" placeholder="+905551234567" />
+          </div>
+          <button class="btn btn-primary" id="phoneSearchBtn" onclick="searchPhone()">
+            <span>🔍 Sorgula</span>
+          </button>
+        </div>
+        <div id="phoneResult"></div>
+      </div>
+    </div>
+
+    <!-- ===== DOMAIN TAB ===== -->
+    <div id="pane-domain" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon yellow">🌍</div>
+          <div>
+            <div class="card-title">Domain Sorgula</div>
+            <div class="card-subtitle">WHOIS ve DNS kayıt bilgileri</div>
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-wrapper">
+            <span class="input-icon">🌍</span>
+            <input type="text" id="domainInput" class="has-icon" placeholder="example.com" />
+          </div>
+          <button class="btn btn-primary" id="domainSearchBtn" onclick="searchDomain()">
+            <span>🔍 Sorgula</span>
+          </button>
+        </div>
+        <div id="domainResult"></div>
+      </div>
+    </div>
+
+    <!-- ===== GUILD SEARCH TAB ===== -->
+    <div id="pane-guild" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon purple">🏰</div>
+          <div>
+            <div class="card-title">Discord Sunucu Sorgula</div>
+            <div class="card-subtitle">Sunucu ID ile üye ve bilgi sorgulama</div>
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-wrapper">
+            <span class="input-icon">🔢</span>
+            <input type="text" id="guildIdInput" class="has-icon" placeholder="Sunucu ID (örn: 123456789012345678)" />
+          </div>
+          <button class="btn btn-primary" id="guildSearchBtn" onclick="searchGuild()">
+            <span>🔍 Sorgula</span>
+          </button>
+        </div>
+        <div id="guildResult"></div>
+      </div>
+    </div>
+
+    <!-- ===== GUILDS LIST TAB ===== -->
+    <div id="pane-guilds" class="tab-pane" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon blue">📋</div>
+          <div>
+            <div class="card-title">Sunucu Listesi</div>
+            <div class="card-subtitle">Veritabanındaki tüm Discord sunucuları</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="loadGuilds()" id="loadGuildsBtn">
+          <span>📋 Sunucuları Yükle</span>
+        </button>
+        <div id="guildsResult" style="margin-top:16px"></div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /mainApp -->
+
+<!-- Notification container -->
+<div id="notifContainer"></div>
+
+<script>
+// ===== STATE =====
+let currentTab = 'discord';
+
+// ===== AUTH =====
+async function checkAuth() {
+  try {
+    const r = await fetch('/api/health');
+    const d = await r.json();
+    if (d.authed) showApp();
+  } catch {}
+}
+
+async function doLogin() {
+  const pw = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginError');
+  err.style.display = 'none';
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Giriş yapılıyor...';
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      showApp();
+      notify('✅ Giriş başarılı!', 'success');
+    } else {
+      err.style.display = 'block';
+    }
+  } catch {
+    err.style.display = 'block';
+    err.textContent = '❌ Sunucuya bağlanılamadı.';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>Giriş Yap</span>';
+  }
+}
+
+async function doLogout() {
+  await fetch('/api/logout', { method: 'POST' });
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginPassword').value = '';
+}
+
+function showApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+}
+
+// Enter key support
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const active = document.activeElement;
+    if (active && active.id === 'loginPassword') doLogin();
+    else if (active && active.id === 'discordIdInput') searchDiscord();
+    else if (active && active.id === 'emailInput') searchEmail();
+    else if (active && active.id === 'ipInput') searchIp();
+    else if (active && active.id === 'usernameInput') searchUsername();
+    else if (active && active.id === 'phoneInput') searchPhone();
+    else if (active && active.id === 'domainInput') searchDomain();
+    else if (active && active.id === 'guildIdInput') searchGuild();
+  }
+});
+
+// ===== TABS =====
+function switchTab(tab) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('pane-' + tab).style.display = 'block';
+  document.getElementById('tab-' + tab).classList.add('active');
+  currentTab = tab;
+}
+
+// ===== NOTIFICATIONS =====
+function notify(msg, type = 'info', duration = 4000) {
+  const c = document.getElementById('notifContainer');
+  const n = document.createElement('div');
+  n.className = `notification ${type}`;
+  n.innerHTML = msg;
+  c.appendChild(n);
+  setTimeout(() => {
+    n.style.opacity = '0';
+    n.style.transform = 'translateX(20px)';
+    n.style.transition = 'all 0.3s ease';
+    setTimeout(() => n.remove(), 300);
+  }, duration);
+}
+
+// ===== LOADING STATE =====
+function setLoading(btnId, resultId, loading) {
+  const btn = document.getElementById(btnId);
+  const result = document.getElementById(resultId);
+  if (loading) {
+    btn.disabled = true;
+    btn.dataset.orig = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span> Aranıyor...';
+    result.innerHTML = `<div class="loading-overlay"><div class="spinner"></div><span>Veriler getiriliyor...</span></div>`;
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = btn.dataset.orig || btn.innerHTML;
+  }
+}
+
+// ===== COPY =====
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => notify('📋 Kopyalandı!', 'success', 2000));
+}
+
+// ===== DISCORD SEARCH =====
+async function searchDiscord() {
+  const id = document.getElementById('discordIdInput').value.trim();
+  if (!id || !/^\d{5,30}$/.test(id)) {
+    notify('❌ Geçerli bir Discord ID girin', 'error');
+    return;
+  }
+  setLoading('discordSearchBtn', 'discordResult', true);
+  try {
+    const r = await fetch(`/api/search?discord_id=${encodeURIComponent(id)}`);
+    const d = await r.json();
+    setLoading('discordSearchBtn', 'discordResult', false);
+    renderDiscordResult(d, id);
+  } catch (err) {
+    setLoading('discordSearchBtn', 'discordResult', false);
+    document.getElementById('discordResult').innerHTML = errorBox('Sunucu hatası: ' + err.message);
+  }
+}
+
+function renderDiscordResult(data, id) {
+  const el = document.getElementById('discordResult');
+  if (!data.result) {
+    el.innerHTML = `<div class="result-panel">${emptyState('🔍', 'Sonuç Bulunamadı', 'Bu Discord ID için veritabanında kayıt yok.')}</div>`;
+    return;
+  }
+  const r = data.result;
+  const fc = r.findcord;
+  const ui = fc?.UserInfo || fc?.userInfo || {};
+
+  const avatarUrl = r.findcord_avatar_url || ui.UserdisplayAvatar ||
+    (r.avatar_hash ? `https://cdn.discordapp.com/avatars/${id}/${r.avatar_hash}.png?size=256` : `https://cdn.discordapp.com/embed/avatars/${parseInt(id) % 5}.png`);
+
+  const username = r.username || ui.UserName || 'Bilinmiyor';
+  const globalName = r.findcord_global_name || ui.UserGlobalName || '';
+  const badges = r.findcord_badges || [];
+  const servers = r.findcord_servers || [];
+
+  let html = `<div class="result-panel">`;
+
+  // Profile card
+  html += `<div class="profile-card">
+    <img class="profile-avatar" src="${esc(avatarUrl)}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" />
+    <div class="profile-info">
+      <div class="profile-name">${esc(username)} ${globalName ? `<span style="color:var(--text-muted);font-size:14px;font-weight:400">(${esc(globalName)})</span>` : ''}</div>
+      <div style="color:var(--text-muted);font-size:13px;margin-top:2px">ID: <code style="color:var(--cyan)">${esc(id)}</code>
+        <button class="copy-btn" onclick="copyText('${esc(id)}')">📋</button>
+      </div>
+      <div class="profile-meta">
+        ${r.findcord_created ? `<span class="badge badge-neutral">📅 ${esc(r.findcord_created)}</span>` : ''}
+        ${r.findcord_presence ? `<span class="badge badge-info">🟢 ${esc(r.findcord_presence)}</span>` : ''}
+        ${badges.map(b => `<span class="badge badge-purple" title="${esc(b.description || '')}">${b.icon ? `<img src="${esc(b.icon)}" style="width:14px;height:14px" />` : '🏅'} ${esc(b.description || 'Badge')}</span>`).join('')}
+      </div>
+    </div>
+  </div>`;
+
+  // Data fields
+  html += `<div class="card" style="margin-top:16px">`;
+  html += `<div class="section-title">📊 Kullanıcı Bilgileri</div>`;
+
+  const fields = [
+    ['Discord ID', id],
+    ['Kullanıcı Adı', r.username],
+    ['Discriminator', r.discriminator ? '#' + r.discriminator : null],
+    ['Email', r.email],
+    ['IP Adresi', r.ip],
+    ['IP Konumu', r.ip_location],
+    ['Kayıt IP', r.registration_ip],
+    ['Son IP', r.last_ip],
+    ['Bio', r.bio],
+    ['Premium', r.premium],
+    ['Doğrulanmış', r.verified],
+    ['Abonelik', r.subscription_type],
+    ['Aktif', r.is_active !== null ? (r.is_active ? 'Evet' : 'Hayır') : null],
+    ['Oluşturulma', r.created_at],
+    ['Son Giriş', r.last_login],
+    ['Pronouns', r.findcord_pronouns],
+  ];
+
+  for (const [label, value] of fields) {
+    if (!value) continue;
+    html += `<div class="field-row">
+      <div class="field-label">${esc(label)}</div>
+      <div class="field-value">${esc(String(value))} <button class="copy-btn" onclick="copyText('${esc(String(value))}')">📋</button></div>
+    </div>`;
+  }
+  html += `</div>`;
+
+  // Connections
+  if (r.connections_apps && r.connections_apps.length > 0) {
+    html += `<div class="card" style="margin-top:16px">`;
+    html += `<div class="section-title">🔗 Bağlı Hesaplar</div>`;
+    html += `<div class="result-grid">`;
+    for (const c of r.connections_apps) {
+      const app = typeof c === 'object' ? c.app : String(c);
+      const name = typeof c === 'object' ? (c.name || c.id || '') : '';
+      html += `<div class="result-item found">
+        <div style="font-weight:600;margin-bottom:4px">${esc(app)}</div>
+        <div style="color:var(--text-secondary);font-size:13px">${esc(name)}</div>
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  // Servers
+  if (servers.length > 0) {
+    html += `<div class="card" style="margin-top:16px">`;
+    html += `<div class="section-title">🏰 Katıldığı Sunucular (${servers.length})</div>`;
+    html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">`;
+    for (const s of servers) {
+      const iconUrl = s.icon ? (s.icon.startsWith('http') ? s.icon : `https://cdn.discordapp.com/icons/${s.id}/${s.icon}.png?size=64`) : null;
+      html += `<div class="guild-card">
+        <div class="guild-icon">${iconUrl ? `<img src="${esc(iconUrl)}" onerror="this.parentElement.textContent='🏰'" />` : '🏰'}</div>
+        <div style="min-width:0">
+          <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.name || 'Bilinmiyor')}</div>
+          <div style="color:var(--text-muted);font-size:11px">${esc(s.id)}</div>
+          ${s.booster ? '<span class="badge badge-purple" style="margin-top:4px">💎 Booster</span>' : ''}
+        </div>
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  // Potential friends
+  if (r.potential_friends && r.potential_friends.length > 0) {
+    html += `<div class="card" style="margin-top:16px">`;
+    html += `<div class="section-title">👥 Potansiyel Bağlantılar (${r.potential_friends.length})</div>`;
+    for (const f of r.potential_friends) {
+      html += `<div class="member-item">
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:13px">${esc(f.username || f.discord_id)}</div>
+          <div style="color:var(--text-muted);font-size:11px">ID: ${esc(f.discord_id)} • ${esc(f.relation === 'same_ip' ? '🌐 Aynı IP' : '🏰 Aynı Sunucu')}</div>
+        </div>
+        <span class="badge ${f.confidence === 'high' ? 'badge-danger' : 'badge-warning'}">${esc(f.confidence || 'medium')}</span>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+// ===== EMAIL SEARCH =====
+async function searchEmail() {
+  const email = document.getElementById('emailInput').value.trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    notify('❌ Geçerli bir email adresi girin', 'error');
+    return;
+  }
+  setLoading('emailSearchBtn', 'emailResult', true);
+  try {
+    const r = await fetch(`/api/search-email?email=${encodeURIComponent(email)}`);
+    const d = await r.json();
+    setLoading('emailSearchBtn', 'emailResult', false);
+    renderEmailResult(d, email);
+  } catch (err) {
+    setLoading('emailSearchBtn', 'emailResult', false);
+    document.getElementById('emailResult').innerHTML = errorBox('Sunucu hatası: ' + err.message);
+  }
+}
+
+function renderEmailResult(data, email) {
+  const el = document.getElementById('emailResult');
+  let html = `<div class="result-panel">`;
+
+  // Stats
+  const discordCount = (data.sites || []).filter(s => s.site === 'Discord').length;
+  const breachCount = data.breaches_count || 0;
+  const platformCount = data.platforms_found || 0;
+
+  html += `<div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--accent)">${discordCount}</div>
+      <div class="stat-label">Discord Hesabı</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--danger)">${breachCount}</div>
+      <div class="stat-label">Breach</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--success)">${platformCount}</div>
+      <div class="stat-label">Platform</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--warning)">${(data.sites || []).length}</div>
+      <div class="stat-label">Toplam Kayıt</div>
+    </div>
+  </div>`;
+
+  // Email validation
+  if (data.validation) {
+    const v = data.validation;
+    html += `<div class="card" style="margin-bottom:16px">
+      <div class="section-title">✅ Email Doğrulama</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <span class="badge ${v.format ? 'badge-success' : 'badge-danger'}">${v.format ? '✅ Format Geçerli' : '❌ Format Hatalı'}</span>
+        ${v.free ? '<span class="badge badge-info">📧 Ücretsiz Sağlayıcı</span>' : ''}
+        ${v.disposable ? '<span class="badge badge-danger">🗑️ Geçici Email</span>' : ''}
+        ${v.domain ? `<span class="badge badge-neutral">🌐 ${esc(v.domain)}</span>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // EmailRep
+  if (data.emailrep) {
+    const rep = data.emailrep;
+    const repColor = rep.reputation === 'high' ? 'badge-success' : rep.reputation === 'low' ? 'badge-danger' : 'badge-warning';
+    html += `<div class="card" style="margin-bottom:16px">
+      <div class="section-title">🛡️ Email İtibarı (EmailRep.io)</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <span class="badge ${repColor}">İtibar: ${esc(rep.reputation || 'unknown')}</span>
+        ${rep.suspicious ? '<span class="badge badge-danger">⚠️ Şüpheli</span>' : '<span class="badge badge-success">✅ Temiz</span>'}
+        ${rep.details?.blacklisted ? '<span class="badge badge-danger">🚫 Kara Listede</span>' : ''}
+        ${rep.details?.data_breach ? '<span class="badge badge-warning">💥 Breach Var</span>' : ''}
+        ${rep.details?.spam ? '<span class="badge badge-warning">📨 Spam</span>' : ''}
+        ${rep.details?.disposable ? '<span class="badge badge-danger">🗑️ Geçici</span>' : ''}
+        ${rep.details?.free_provider ? '<span class="badge badge-info">📧 Ücretsiz</span>' : ''}
+        ${rep.references ? `<span class="badge badge-neutral">📊 ${rep.references} referans</span>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // Sites / Results
+  if (data.sites && data.sites.length > 0) {
+    html += `<div class="card">`;
+    html += `<div class="section-title">📊 Bulunan Kayıtlar (${data.sites.length})</div>`;
+    html += `<div class="result-grid">`;
+    for (const s of data.sites) {
+      const isDiscord = s.site === 'Discord';
+      const isBreach = s.leak_type === 'breach';
+      const isGravatar = s.leak_type === 'gravatar';
+      const cls = isBreach ? 'breach' : isDiscord ? 'found' : '';
+      html += `<div class="result-item ${cls}">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-weight:700;font-size:14px">${esc(s.site)}</div>
+          ${isBreach ? '<span class="badge badge-danger">💥 Breach</span>' : isDiscord ? '<span class="badge badge-success">✅ Bulundu</span>' : '<span class="badge badge-info">🔍 Bulundu</span>'}
+        </div>
+        ${s.username ? `<div style="font-size:13px;color:var(--text-secondary)">👤 ${esc(s.username)}</div>` : ''}
+        ${s.discord_id ? `<div style="font-size:12px;color:var(--text-muted)">ID: ${esc(s.discord_id)} <button class="copy-btn" onclick="copyText('${esc(s.discord_id)}')">📋</button></div>` : ''}
+        ${s.ip ? `<div style="font-size:12px;color:var(--text-muted)">🌐 ${esc(s.ip)}</div>` : ''}
+        ${s.breach_date ? `<div style="font-size:12px;color:var(--text-muted)">📅 ${esc(s.breach_date)}</div>` : ''}
+        ${s.data_classes ? `<div style="font-size:11px;color:var(--danger);margin-top:4px">${s.data_classes.slice(0,3).map(d => esc(d)).join(', ')}</div>` : ''}
+        ${s.url ? `<a href="${esc(s.url)}" target="_blank" style="font-size:12px;color:var(--accent);display:block;margin-top:4px">🔗 Profili Gör</a>` : ''}
+        ${s.created_at ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">📅 ${esc(s.created_at)}</div>` : ''}
+      </div>`;
+    }
+    html += `</div></div>`;
+  } else {
+    html += emptyState('🔍', 'Kayıt Bulunamadı', 'Bu email için veritabanında kayıt yok.');
+  }
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+// ===== IP SEARCH =====
+async function searchIp() {
+  const ip = document.getElementById('ipInput').value.trim();
+  if (!ip || ip.length < 5) {
+    notify('❌ Geçerli bir IP adresi girin', 'error');
+    return;
+  }
+  setLoading('ipSearchBtn', 'ipResult', true);
+  try {
+    const r = await fetch(`/api/search-ip?ip=${encodeURIComponent(ip)}`);
+    const d = await r.json();
+    setLoading('ipSearchBtn', 'ipResult', false);
+    renderIpResult(d, ip);
+  } catch (err) {
+    setLoading('ipSearchBtn', 'ipResult', false);
+    document.getElementById('ipResult').innerHTML = errorBox('Sunucu hatası: ' + err.message);
+  }
+}
+
+function renderIpResult(data, ip) {
+  const el = document.getElementById('ipResult');
+  let html = `<div class="result-panel">`;
+
+  html += `<div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--accent)">${data.count || 0}</div>
+      <div class="stat-label">Kayıt Bulundu</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--success);font-size:16px">${esc(data.ip_location || 'Bilinmiyor')}</div>
+      <div class="stat-label">Konum</div>
+    </div>
+  </div>`;
+
+  if (data.results && data.results.length > 0) {
+    html += `<div class="card">`;
+    html += `<div class="section-title">👥 Bulunan Kullanıcılar (${data.results.length})</div>`;
+    html += `<table class="data-table"><thead><tr>
+      <th>Discord ID</th><th>Kullanıcı Adı</th><th>Email</th><th>Konum</th>
+    </tr></thead><tbody>`;
+    for (const r of data.results) {
+      html += `<tr>
+        <td><code style="color:var(--cyan)">${esc(r.discord_id || '-')}</code></td>
+        <td>${esc(r.username || '-')}</td>
+        <td>${esc(r.email || '-')}</td>
+        <td>${esc(r.ip_location || '-')}</td>
+      </tr>`;
+    }
+    html += `</tbody></table></div>`;
+  } else {
+    html += emptyState('🌐', 'Kayıt Bulunamadı', 'Bu IP adresi için veritabanında kayıt yok.');
+  }
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+// ===== USERNAME SEARCH =====
+async function searchUsername() {
+  const username = document.getElementById('usernameInput').value.trim();
+  if (!username || username.length < 2) {
+    notify('❌ Kullanıcı adı girin', 'error');
+    return;
+  }
+  setLoading('usernameSearchBtn', 'usernameResult', true);
+  try {
+    const r = await fetch(`/api/lookup-username?username=${encodeURIComponent(username)}`);
+    const d = await r.json();
+    setLoading('usernameSearchBtn', 'usernameResult', false);
+    renderUsernameResult(d);
+  } catch (err) {
+    setLoading('usernameSearchBtn', 'usernameResult', false);
+    document.getElementById('usernameResult').innerHTML = errorBox('Sunucu hatası: ' + err.message);
+  }
+}
+
+function renderUsernameResult(data) {
+  const el = document.getElementById('usernameResult');
+  let html = `<div class="result-panel">`;
+
+  html += `<div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--success)">${data.count || 0}</div>
+      <div class="stat-label">Bulunan Platform</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--text-muted)">${(data.platforms || 0) - (data.count || 0)}</div>
+      <div class="stat-label">Bulunamayan</div>
+    </div>
+  </div>`;
+
+  if (data.results && data.results.length > 0) {
+    html += `<div class="card"><div class="section-title">🔍 Platform Sonuçları</div>`;
+    html += `<div class="result-grid">`;
+    for (const r of data.results) {
+      const found = r.available;
+      html += `<div class="result-item ${found ? 'found' : 'not-found'}">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-weight:700">${esc(r.platform)}</div>
+          <span class="badge ${found ? 'badge-success' : 'badge-neutral'}">${found ? '✅ Bulundu' : '❌ Yok'}</span>
+        </div>
+        ${r.url ? `<a href="${esc(r.url)}" target="_blank" style="font-size:12px;color:var(--accent)">🔗 Profili Gör</a>` : ''}
+        ${r.name ? `<div style="font-size:13px;margin-top:4px">${esc(r.name)}</div>` : ''}
+        ${r.bio ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px">${esc(r.bio)}</div>` : ''}
+        ${r.followers !== undefined ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px">👥 ${r.followers} takipçi</div>` : ''}
+        ${r.karma !== undefined ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px">⬆️ ${r.karma} karma</div>` : ''}
+        ${r.note ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">${esc(r.note)}</div>` : ''}
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+// ===== PHONE SEARCH =====
+async function searchPhone() {
+  const phone = document.getElementById('phoneInput').value.trim();
+  if (!phone) {
+    notify('❌ Telefon numarası girin', 'error');
+    return;
+  }
+  setLoading('phoneSearchBtn', 'phoneResult', true);
+  try {
+    const r = await fetch(`/api/lookup-phone?phone=${encodeURIComponent(phone)}`);
+    const d = await r.json();
+    setLoading('phoneSearchBtn', 'phoneResult', false);
+    renderPhoneResult(d);
+  } catch (err) {
+    setLoading('phoneSearchBtn', 'phoneResult', false);
+    document.getElementById('phoneResult').innerHTML = errorBox('Sunucu hatası: ' + err.message);
+  }
+}
+
+function renderPhoneResult(data) {
+  const el = document.getElementById('phoneResult');
+  const v = data.validation;
+  let html = `<div class="result-panel"><div class="card">`;
+  html += `<div class="section-title">📱 Telefon Analizi</div>`;
+
+  html += `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+    <span class="badge ${v.valid ? 'badge-success' : 'badge-danger'}">${v.valid ? '✅ Geçerli' : '❌ Geçersiz'}</span>
+    ${v.country ? `<span class="badge badge-info">🌍 ${esc(v.country)}</span>` : ''}
+    ${v.carrier ? `<span class="badge badge-purple">📡 ${esc(v.carrier)}</span>` : ''}
+    ${v.type ? `<span class="badge badge-neutral">${esc(v.type)}</span>` : ''}
+  </div>`;
+
+  const fields = [
+    ['Orijinal', v.original],
+    ['Temizlenmiş', v.cleaned],
+    ['Ülke', v.country],
+    ['Ülke Kodu', v.countryCode ? '+' + v.countryCode : null],
+    ['Operatör', v.carrier],
+    ['Tip', v.type],
+  ];
+
+  for (const [label, value] of fields) {
+    if (!value) continue;
+    html += `<div class="field-row">
+      <div class="field-label">${esc(label)}</div>
+      <div class="field-value">${esc(String(value))}</div>
+    </div>`;
+  }
+
+  html += `</div></div>`;
+  el.innerHTML = html;
+}
+
+// ===== DOMAIN SEARCH =====
+async function searchDomain() {
+  const domain = document.getElementById('domainInput').value.trim();
+  if (!domain || !domain.includes('.')) {
+    notify('❌ Geçerli bir domain girin', 'error');
+    return;
+  }
+  setLoading('domainSearchBtn', 'domainResult', true);
+  try {
+    const r = await fetch(`/api/lookup-domain?domain=${encodeURIComponent(domain)}`);
+    const d = await r.json();
+    setLoading('domainSearchBtn', 'domainResult', false);
+    renderDomainResult(d);
+  } catch (err) {
+    setLoading('domainSearchBtn', 'domainResult', false);
+    document.getElementById('domainResult').innerHTML = errorBox('Sunucu hatası: ' + err.message);
+  }
+}
+
+function renderDomainResult(data) {
+  const el = document.getElementById('domainResult');
+  const info = data.info || {};
+  let html = `<div class="result-panel"><div class="card">`;
+  html += `<div class="section-title">🌍 Domain Bilgileri</div>`;
+
+  const fields = [
+    ['Domain', data.query],
+    ['Kayıt Tarihi', info.created],
+    ['Bitiş Tarihi', info.expires],
+    ['Kayıt Şirketi', info.registrar],
+    ['Müsait', info.available !== undefined ? (info.available ? 'Evet' : 'Hayır') : null],
+  ];
+
+  for (const [label, value] of fields) {
+    if (!value) continue;
+    html += `<div class="field-row">
+      <div class="field-label">${esc(label)}</div>
+      <div class="field-value">${esc(String(value))}</div>
+    </div>`;
+  }
+
+  if (info.whois) {
+    html += `<div style="margin-top:16px">
+      <div class="section-title">📄 WHOIS Verisi</div>
+      <div class="code-block">${esc(JSON.stringify(info.whois, null, 2))}</div>
+    </div>`;
+  }
+
+  if (info.error) {
+    html += `<div style="color:var(--danger);font-size:13px;margin-top:8px">⚠️ ${esc(info.error)}</div>`;
+  }
+
+  html += `</div></div>`;
+  el.innerHTML = html;
+}
+
+// ===== GUILD SEARCH =====
+async function searchGuild() {
+  const guildId = document.getElementById('guildIdInput').value.trim();
+  if (!guildId || !/^\d{10,30}$/.test(guildId)) {
+    notify('❌ Geçerli bir Sunucu ID girin', 'error');
+    return;
+  }
+  setLoading('guildSearchBtn', 'guildResult', true);
+  try {
+    const r = await fetch(`/api/search-guild?guild_id=${encodeURIComponent(guildId)}`);
+    const d = await r.json();
+    setLoading('guildSearchBtn', 'guildResult', false);
+    renderGuildResult(d);
+  } catch (err) {
+    setLoading('guildSearchBtn', 'guildResult', false);
+    document.getElementById('guildResult').innerHTML = errorBox('Sunucu hatası: ' + err.message);
+  }
+}
+
+function renderGuildResult(data) {
+  const el = document.getElementById('guildResult');
+  const guild = data.guild || {};
+  let html = `<div class="result-panel">`;
+
+  // Guild info
+  const iconUrl = guild.icon ? (guild.icon.startsWith('http') ? guild.icon : `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=128`) : null;
+  html += `<div class="card" style="margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="guild-icon" style="width:64px;height:64px;font-size:28px">
+        ${iconUrl ? `<img src="${esc(iconUrl)}" onerror="this.parentElement.textContent='🏰'" />` : '🏰'}
+      </div>
+      <div>
+        <div style="font-size:20px;font-weight:700">${esc(guild.name || 'Bilinmeyen Sunucu')}</div>
+        <div style="color:var(--text-muted);font-size:13px">ID: ${esc(guild.id || data.query)}</div>
+      </div>
+    </div>
+  </div>`;
+
+  // Stats
+  html += `<div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--accent)">${data.count || 0}</div>
+      <div class="stat-label">Üye Bulundu</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--success)">${data.location_count || 0}</div>
+      <div class="stat-label">Konum Tespit</div>
+    </div>
+  </div>`;
+
+  // Members
+  if (data.members && data.members.length > 0) {
+    html += `<div class="card">`;
+    html += `<div class="section-title">👥 Üyeler (${data.members.length})</div>`;
+    html += `<table class="data-table"><thead><tr>
+      <th>Kullanıcı</th><th>Discord ID</th><th>Email</th><th>IP</th><th>Konum</th>
+    </tr></thead><tbody>`;
+    for (const m of data.members) {
+      const avatarUrl = m.avatar_url || `https://cdn.discordapp.com/embed/avatars/${parseInt(m.discord_id || '0') % 5}.png`;
+      const loc = m.ip_location;
+      const locStr = loc ? `${loc.city || ''}${loc.country ? ', ' + loc.country : ''}` : '-';
+      html += `<tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <img src="${esc(avatarUrl)}" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border)" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" />
+            <span>${esc(m.username || m.global_name || 'Bilinmiyor')}</span>
+          </div>
+        </td>
+        <td><code style="color:var(--cyan);font-size:11px">${esc(m.discord_id || '-')}</code></td>
+        <td style="font-size:12px">${esc(m.email || '-')}</td>
+        <td style="font-size:12px">${esc(m.ip || '-')}</td>
+        <td style="font-size:12px">${esc(locStr)}</td>
+      </tr>`;
+    }
+    html += `</tbody></table></div>`;
+  } else {
+    html += emptyState('🏰', 'Üye Bulunamadı', 'Bu sunucu için veritabanında kayıt yok.');
+  }
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+// ===== GUILDS LIST =====
+async function loadGuilds() {
+  const btn = document.getElementById('loadGuildsBtn');
+  const result = document.getElementById('guildsResult');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Yükleniyor...';
+  result.innerHTML = `<div class="loading-overlay"><div class="spinner"></div><span>Sunucular yükleniyor... (Bu işlem uzun sürebilir)</span></div>`;
+  try {
+    const r = await fetch('/api/guilds');
+    const d = await r.json();
+    btn.disabled = false;
+    btn.innerHTML = '📋 Sunucuları Yükle';
+    renderGuildsList(d);
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = '📋 Sunucuları Yükle';
+    result.innerHTML = errorBox('Sunucu hatası: ' + err.message);
+  }
+}
+
+function renderGuildsList(data) {
+  const el = document.getElementById('guildsResult');
+  let html = `<div class="result-panel">`;
+
+  html += `<div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--accent)">${data.count || 0}</div>
+      <div class="stat-label">Toplam Sunucu</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--success)">${(data.guilds || []).filter(g => g.name).length}</div>
+      <div class="stat-label">İsim Bulundu</div>
+    </div>
+  </div>`;
+
+  if (data.findcord_rate_limited) {
+    html += `<div class="notification warning" style="position:relative;top:0;right:0;margin-bottom:16px;max-width:100%">
+      ⚠️ FindCord rate limit aktif. Bazı sunucu isimleri eksik olabilir.
+    </div>`;
+  }
+
+  if (data.guilds && data.guilds.length > 0) {
+    html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">`;
+    for (const g of data.guilds) {
+      const iconUrl = g.icon_url || (g.icon ? (g.icon.startsWith('http') ? g.icon : `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=64`) : null);
+      html += `<div class="guild-card" style="cursor:pointer" onclick="document.getElementById('guildIdInput').value='${esc(g.id)}';switchTab('guild');searchGuild()">
+        <div class="guild-icon">
+          ${iconUrl ? `<img src="${esc(iconUrl)}" onerror="this.parentElement.textContent='🏰'" />` : '🏰'}
+        </div>
+        <div style="min-width:0;flex:1">
+          <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.name || 'Bilinmiyor')}</div>
+          <div style="color:var(--text-muted);font-size:11px;margin-top:2px">${esc(g.id)}</div>
+          <div style="margin-top:4px">
+            <span class="badge badge-info">👥 ${g.member_count || 0} üye</span>
+          </div>
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+  } else {
+    html += emptyState('🏰', 'Sunucu Bulunamadı', 'Veritabanında sunucu kaydı yok.');
+  }
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+// ===== HELPERS =====
+function esc(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function errorBox(msg) {
+  return `<div class="result-panel">
+    <div class="card" style="border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.05)">
+      <div style="display:flex;align-items:center;gap:12px;color:var(--danger)">
+        <span style="font-size:24px">❌</span>
+        <div>
+          <div style="font-weight:600;margin-bottom:4px">Hata Oluştu</div>
+          <div style="font-size:13px;color:var(--text-secondary)">${esc(msg)}</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function emptyState(icon, title, desc) {
+  return `<div class="empty-state">
+    <div class="empty-icon">${icon}</div>
+    <h3>${esc(title)}</h3>
+    <p>${esc(desc)}</p>
+  </div>`;
+}
+
+// ===== INIT =====
+checkAuth();
+</script>
+</body>
+</html>
