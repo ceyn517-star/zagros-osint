@@ -4,12 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "load-sql": "node scripts/load-sql.js",
+    "decompress": "node scripts/decompress.js"
   },
   "dependencies": {
     "axios": "^1.15.1",
     "express": "^4.19.2",
     "express-session": "^1.18.0",
-    "geoip-lite": "^2.0.1"
+    "geoip-lite": "^2.0.1",
+    "mysql2": "^3.11.5"
   }
 }
